@@ -20,7 +20,7 @@ def setup_logging(log_level: str = "INFO", log_file: Path | None = None) -> None
         raise ValueError(f"Invalid log level: {log_level}")
 
     formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        '%(asctime)s - %(levelname)s - %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
 

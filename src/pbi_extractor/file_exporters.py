@@ -40,7 +40,7 @@ def export_metadata_to_excel(tables_df: pd.DataFrame, fields_df: pd.DataFrame, r
         logger.info("Excel export is disabled in configuration.")
         return
 
-    excel_file_path = output_dir / f"{model_name}_metadata.xlsx"
+    excel_file_path = output_dir / f"{model_name}_metadata_{timestamp}.xlsx"
     logger.info(f"Exporting metadata to Excel file: {excel_file_path}...")
     try:
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -52,8 +52,8 @@ def export_metadata_to_excel(tables_df: pd.DataFrame, fields_df: pd.DataFrame, r
                 logger.info("No relationships data to write to Excel.")
 
             # Sheet for tables
-            if not tabbles_df.empty:
-                tabbles_df.to_excel(writer, sheet_name="Tables", index=False)
+            if not tables_df.empty:
+                tables_df.to_excel(writer, sheet_name="Tables", index=False)
             else:
                 logger.info("No Tables data to write to Excel.")
 
@@ -201,7 +201,7 @@ def generate_mermaid_er_diagram(tables_df: pd.DataFrame, rels_df: pd.DataFrame) 
             table_id = sanitize_mermaid_id(row["table_name"])
             # Escape double quotes in table names for the label
             table_label = row["table_name"].replace('"', '#quot;')
-            lines.append(f'    {table_id} [label="{table_label}"]') # Using label syntax for clarity
+            lines.append(f'    {table_id} [label="{table_label}"]')
             # TODO: Add columns to table definition if desired
             # Example: JOB {
             #   string job_id PK

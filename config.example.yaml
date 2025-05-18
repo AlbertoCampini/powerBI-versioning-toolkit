@@ -29,6 +29,10 @@ options:
   # Options: true, false
   verbose: false
 
+  # Log level for the script.
+  # Options: 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'
+  log_level: "WARNING"
+
 output_elements:
   # Choose which output files to generate. Set to true to enable, false to disable.
   save_csv: true

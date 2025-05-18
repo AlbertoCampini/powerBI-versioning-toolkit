@@ -133,6 +133,7 @@ This file controls the behavior of the script. Key sections:
 |                   | `save_changelog`       | Create/update a `CHANGELOG.md` file for the processed model, summarizing changes.                          | `true`                                                                     |
 |                   | `save_database_copy`   | Save a timestamped copy of the extracted `database.json` file.                                             | `true`                                                                     |
 |                   | `save_pbix_zip`        | Save a timestamped ZIP archive of the original `.pbix` file.                                               | `false`                                                                    |
+|                   | `granularity_output`        | Format `string` for granularity timestamped output files                                               | `%Y%m%d`
 | `git`             | `enabled`              | Enable Git versioning features (`true`/`false`).                                                           | `false`                                                                    |
 |                   | `remote_url`           | URL of the remote Git repository (e.g., GitHub, GitLab). Required if `enabled` is `true`.                  | `https://github.com/your_username/your_pbi_models_repo.git`                |
 |                   | `branch`               | Target branch for commits and pushes (e.g., `main`, `master`).                                             | `main`                                                                     |
@@ -152,32 +153,6 @@ If `GIT_USERNAME` and `GIT_TOKEN` are provided and `git.remote_url` is an HTTPS 
 
 ---
 
-## Output Files Structure
-
-If `custom_output_root` is set to `D:/PBI_Models_Backup`, and you process a file named `SalesAnalysis.pbix`, the structure will be:
-
-```
-D:/PBI_Models_Backup/
-└── SalesAnalysis/                  # Folder for this specific PBIX model
-    ├── SalesAnalysis_YYYYMMDD_HHMMSS.zip # ZIP of the PBIX file (if enabled)
-    ├── SalesAnalysis_database_YYYYMMDD_HHMMSS.json # Timestamped database.json (if enabled)
-    ├── SalesAnalysis_diff.json         # JSON diff output (if changes & enabled)
-    ├── SalesAnalysis_diff_report.md    # Markdown diff report (if changes & enabled)
-    ├── SalesAnalysis_ER_diagram.md     # Mermaid ER diagram (if enabled)
-    ├── SalesAnalysis_fields.csv        # Fields metadata (if enabled)
-    ├── SalesAnalysis_metadata.xlsx     # Excel report (if enabled)
-    ├── SalesAnalysis_relationships.csv # Relationships metadata (if enabled)
-    ├── SalesAnalysis_tables.csv        # Tables metadata (if enabled)
-    ├── CHANGELOG.md                    # Changelog for this model (if enabled)
-    ├── database.json                   # The latest extracted model (used for next run's diff)
-    └── _temp_extraction/             # Temporary folder used during extraction (usually deleted)
-    └── logs/                           # Log files for script runs
-        └── pbi_extractor_YYYYMMDD_HHMMSS.log
-```
-
-If Git is enabled, the `D:/PBI_Models_Backup/` directory (or your `custom_output_root`) will be initialized as a Git repository. All files and changes within this directory (including the `SalesAnalysis` subfolder) will be committed.
-
----
 
 ## Troubleshooting
 

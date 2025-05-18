@@ -42,6 +42,7 @@ def load_app_config(config_path: Path = Path("config.yaml")) -> Dict[str, Any]:
         "model_serialization": config_from_yaml.get("options", {}).get("model_serialization", "Raw"),
         "mashup_serialization": config_from_yaml.get("options", {}).get("mashup_serialization", "Default"),
         "verbose": config_from_yaml.get("options", {}).get("verbose", False),
+        "log_level": config_from_yaml.get("options", {}).get("log_level", "INFO"),
         "output_elements": config_from_yaml.get("output_elements", {}),
         "git_config": config_from_yaml.get("git", {}),
         "granularity_output": config_from_yaml.get("output_elements", {}).get("granularity_output", "%Y%m%d_%H%M%S"),

@@ -48,6 +48,7 @@ from pbi_extractor.git_manager import (
 def main_workflow():
     """Orchestrates the entire PBI model extraction and processing workflow."""
     # 1. Load Configuration
+    print("ℹ️ Phase 1 Loading configuration...", end=" ")
     # Assuming config.yaml is in the project root (parent of src)
     config_file_path = PROJECT_ROOT / "config.yaml"
     try:
@@ -63,9 +64,11 @@ def main_workflow():
         sys.exit(1)
 
     config = get_config() # Get the globally accessible config
+    print("✅ Phase 1 Complete")
 
     # 2. Setup Logging (now that config is loaded)
-    log_level = "DEBUG" if config.get("verbose", False) else "INFO"
+    print("ℹ️ Phase 2 Setting up logging...", end =" ")
+    log_level = config.get("log_level", False)
     # Define a log file path, e.g., in the base_output_root or a dedicated logs folder
     log_file_path = config["base_output_root"] / "logs" / f"pbi_extractor_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
     try:
@@ -93,15 +96,12 @@ def main_workflow():
             # Decide if to continue or exit
         if not configure_git_remote(git_repo_path):
             logger.warning("Failed to configure Git remote. Pushing may not work.")
-        # Optional: Pull latest changes before doing any work
-        # if git_pull_latest(git_repo_path):
-        #     logger.info("Successfully pulled latest changes from remote.")
-        # else:
-        #     logger.warning("Could not pull latest changes from remote. Continuing with local state.")
     else:
         logger.info("Git operations disabled by configuration.")
 
+    print("✅ Phase 2 Complete")
     # 3. Get Power BI Session
+    print("🔍 Phase 3 Getting Power BI session...", end =" ")
     try:
         pbi_session = get_first_pbi_session()
         pbix_file_path = Path(pbi_session["pbix_path"])
@@ -139,8 +139,10 @@ def main_workflow():
     # The "new" model will be extracted into a temporary or specific subfolder first
     extraction_target_folder = current_model_output_dir / "_temp_extraction"
     extraction_target_folder.mkdir(parents=True, exist_ok=True)
+    print("✅ Phase 3 Complete")
 
     # 4. Load Old Model (if exists)
+    print("⚗️ Phase 4 Loading old model (if exists)...", end=" ")
     old_model_data = None
     if old_model_json_path.exists() and config.get("output_elements", {}).get("save_database_copy", True):
         logger.info(f"Previous model found at: {old_model_json_path}")
@@ -151,8 +153,10 @@ def main_workflow():
             logger.warning(f"Found previous database.json at {old_model_json_path} but failed to load it. Proceeding without diff.")
     else:
         logger.info(f"No previous model found at {old_model_json_path} or database copy disabled. This will be treated as the first run for diff purposes.")
+    print("✅ Phase 4 Complete")
 
     # 5. Extract New Model
+    print("🧪 Phase 5 Extracting new model from PBIX...", end=" ")
     try:
         logger.info(f"Extracting current model from PBIX: {pbix_file_path.name} into {extraction_target_folder}")
         # The extracted database.json will be inside extraction_target_folder/Model/database.json
@@ -176,16 +180,20 @@ def main_workflow():
         # shutil.rmtree(extraction_target_folder) 
         sys.exit(1)
     logger.info("Successfully loaded newly extracted model data.")
+    print("✅ Phase 5 Complete")
 
     # 6. Collect Metadata from New Model
+    print("🔧 Phase 6 Collecting metadata from new model...", end=" ")
     logger.info("Collecting metadata from the new model...")
     tables_df, fields_df, rels_df = collect_metadata_from_model(new_model_data)
     if tables_df.empty and fields_df.empty and rels_df.empty:
         logger.warning("No metadata (tables, fields, relationships) collected from the new model. Output files might be empty or not generated.")
     else:
         logger.info(f"Metadata collected: {len(tables_df)} tables, {len(fields_df)} fields, {len(rels_df)} relationships.")
-
+    print("✅ Phase 6 Complete")
+    
     # 7. Perform Diff (if old model data is available)
+    print("🔄 Phase 7 Performing diff (if old model data is available)...", end=" ")
     model_diff_data = None
     if old_model_data and new_model_data:
         logger.info("Performing diff between old and new models...")
@@ -200,8 +208,10 @@ def main_workflow():
     else: # new_model_data must be None if we reach here, which should have exited earlier
         logger.error("Critical error: New model data is not available for diff. This should not happen.")
         sys.exit(1)
+    print("✅ Phase 7 Complete")
 
     # 8. Generate and Save Outputs
+    print("💾 Phase 8 Generating and saving outputs...", end=" ")
     # All outputs go into current_model_output_dir
     current_timestamp = datetime.now().strftime(config["granularity_output"])
     logger.info(f"Generating output files for model '{model_name_from_pbix}' with timestamp '{current_timestamp}'...")
@@ -247,9 +257,11 @@ def main_workflow():
         logger.info(f"Cleaned up temporary extraction folder: {extraction_target_folder}")
     except Exception as e:
         logger.warning(f"Could not clean up temporary extraction folder {extraction_target_folder}: {e}")
+    print("✅ Phase 8 Complete")
 
     # --- Git Post-operations (Commit and Push) ---
     if git_enabled:
+        print("🚀 Phase 9 GIT operations...",end=" ")
         logger.info(f"Performing Git post-operations for repository: {git_repo_path}")
         # Ensure we are in the correct directory for Git operations if git_repo_path is different from PROJECT_ROOT
         # The _run_git_command_wrapper already takes working_dir
@@ -267,8 +279,11 @@ def main_workflow():
                 logger.warning("Failed to push changes to remote. Commit was local.")
         else:
             logger.info("No changes were staged or committed (either no changes or commit failed).")
+        print("✅ Phase 9 Complete")
 
     logger.info(f"Workflow completed for PBIX: {pbix_file_path.name}")
+    print("✅ All operations completed successfully.")
+    print("💤 Bye Bye!")
 
 if __name__ == "__main__":
     try:
