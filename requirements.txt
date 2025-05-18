@@ -1,0 +1,4 @@
+pandas>=1.0.0
+PyYAML>=5.0
+python-dotenv>=0.15
+xlsxwriter>=1.0.0

@@ -1,0 +1,62 @@
+# config.example.yaml
+# Example configuration for the Power BI Model Extractor & Versioning Tool
+
+paths:
+  # REQUIRED: Full path to the pbi-tools.exe executable
+  # Example Windows: "C:/Users/youruser/pbi-tools/pbi-tools.exe"
+  # Example macOS/Linux (if pbi-tools were available and named similarly): "/usr/local/bin/pbi-tools.exe"
+  pbi_tools_exe: ""
+
+  # OPTIONAL: Custom root directory for all outputs (CSVs, JSON, Markdown, Git repo if enabled).
+  # If left empty or commented out, defaults to a folder named 'out/' in the project's root directory.
+  # Example: "C:/Users/youruser/Documents/PBI_Model_Exports"
+  custom_output_root: ""
+
+options:
+  # pbi-tools extraction mode. 'Auto' is generally recommended.
+  # Other options: 'Full', 'Basic' (refer to pbi-tools documentation)
+  extract_mode: "Auto"
+
+  # pbi-tools model serialization format. 'Raw' provides more detail for diffing.
+  # Other options: 'Default'
+  model_serialization: "Raw"
+
+  # pbi-tools mashup (Power Query) serialization format.
+  # Options: 'Default', 'Full'
+  mashup_serialization: "Default"
+
+  # Enable verbose logging to the console and log file (sets log level to DEBUG).
+  # Options: true, false
+  verbose: false
+
+output_elements:
+  # Choose which output files to generate. Set to true to enable, false to disable.
+  save_csv: true
+  save_excel: true # Saves a timestamped copy of the new model metadata in Excel format
+  save_json_diff: true
+  save_markdown_diff: true
+  save_mermaid_er: true
+  save_changelog: true
+  save_database_copy: true # Saves a timestamped copy of the new database.json
+  save_pbix_zip: false     # Saves a timestamped ZIP of the original .pbix file
+  granularity_output: "%Y%m%d" # Format string for granularity timestamped output files
+
+git:
+  # Enable Git integration. If true, the script will attempt to initialize a repo,
+  # commit changes, and push to a remote.
+  enabled: false
+
+  # REQUIRED if git.enabled is true: URL of the remote Git repository.
+  # Example: "https://github.com/yourusername/your-repo.git"
+  remote_url: ""
+
+  # Target branch for commits and pushes.
+  # Example: "main", "master", "develop"
+  branch: "main"
+
+  # Prefix for automated commit messages.
+  # The commit message will be: "<commit_prefix>: <ModelName> - <Timestamp>"
+  commit_prefix: "[AUTO] PBI Model Update"
+
+  # Name of the Git remote (usually 'origin').
+  remote_name: "origin"
