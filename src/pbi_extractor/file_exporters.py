@@ -201,12 +201,8 @@ def generate_mermaid_er_diagram(tables_df: pd.DataFrame, rels_df: pd.DataFrame) 
             table_id = sanitize_mermaid_id(row["table_name"])
             # Escape double quotes in table names for the label
             table_label = row["table_name"].replace('"', '#quot;')
-            lines.append(f'    {table_id} [label="{table_label}"]')
-            # TODO: Add columns to table definition if desired
-            # Example: JOB {
-            #   string job_id PK
-            #   string job_title
-            # }
+            lines.append(f'    {table_id}')
+           
 
     # Relationships
     if not rels_df.empty:

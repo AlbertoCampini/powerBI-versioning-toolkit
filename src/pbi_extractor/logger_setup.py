@@ -37,6 +37,7 @@ def setup_logging(log_level: str = "INFO", log_file: Path | None = None) -> None
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
+    # TODO: Implement file logging always not correlated to config_manager
     if log_file:
         # Ensure log directory exists
         log_file.parent.mkdir(parents=True, exist_ok=True)
@@ -51,8 +52,3 @@ def setup_logging(log_level: str = "INFO", log_file: Path | None = None) -> None
 def get_logger(name: str) -> logging.Logger:
     """Returns a logger instance for the given name."""
     return logging.getLogger(name)
-
-# Example of how to use it in other modules:
-# from .logger_setup import get_logger
-# logger = get_logger(__name__)
-# logger.info("This is an info message.")
