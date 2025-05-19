@@ -70,19 +70,17 @@ def collect_metadata_from_model(
             fields_list.append({
                 "table": tbl.get("name", "UnknownTable"),
                 "object_name": col.get("name", "UnknownColumn"),
-                "object_type": "column",
-                "is_measure": False,
+                "object_type": "calculated column" if col.get("type") else "column" , # If type field exists the object is calculated column otherwise it is column
                 "data_type": col.get("dataType"),
                 "is_hidden": col.get("isHidden", False),
                 "description": col.get("description", ""),
-                "expression": col.get("sourceColumn"), # Or other relevant field for DAX for calculated columns
+                "expression": col.get("expression",""), # Expression is relevant field only for DAX for calculated columns
             })
         for meas in tbl.get("measures", []):
             fields_list.append({
                 "table": tbl.get("name", "UnknownTable"),
                 "object_name": meas.get("name", "UnknownMeasure"),
                 "object_type": "measure",
-                "is_measure": True,
                 "data_type": None,  # Measures don't have a fixed data type in the same way columns do
                 "is_hidden": meas.get("isHidden", False),
                 "description": meas.get("description", ""),
