@@ -31,7 +31,7 @@ The primary goal is to automate the tracking of model changes, streamline techni
 
 ## Prerequisites
 
-*   **Python** >= 3.7 (Python 3.9+ recommended).
+*   **Python** >= 3.10.
 *   **pbi-tools**: Version 1.0.0-beta.7 or newer. Ensure `pbi-tools.exe` is accessible. ([Download from pbi-tools releases](https://github.com/pbi-tools/pbi-tools/releases)).
 *   **Git**: Must be installed and accessible in the system's `PATH` if Git integration is enabled.
 
