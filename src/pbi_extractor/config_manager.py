@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 import yaml
 from dotenv import load_dotenv
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict
 
 # Global config dictionary, to be loaded by load_app_config
 APP_CONFIG = {}
@@ -44,6 +44,7 @@ def load_app_config(config_path: Path = Path("config.yaml")) -> Dict[str, Any]:
         "verbose": config_from_yaml.get("options", {}).get("verbose", False),
         "log_level": config_from_yaml.get("options", {}).get("log_level", "INFO"),
         "output_elements": config_from_yaml.get("output_elements", {}),
+        "derivation_config": config_from_yaml.get("derivation", {}),
         "git_config": config_from_yaml.get("git", {}),
         "granularity_output": config_from_yaml.get("output_elements", {}).get("granularity_output", "%Y%m%d_%H%M%S"),
         "git_username": os.getenv("GIT_USERNAME"),
@@ -57,12 +58,28 @@ def load_app_config(config_path: Path = Path("config.yaml")) -> Dict[str, Any]:
         "save_json_diff": True,
         "save_markdown_diff": True,
         "save_mermaid_er": True,
+        "save_derivation_json": True,
+        "save_mermaid_derivation": True,
+        "save_derivation_table": True,
         "save_changelog": True,
         "save_database_copy": True,
         "save_pbix_zip": False,
     }
     for key, default_value in default_output_elements.items():
         APP_CONFIG["output_elements"].setdefault(key, default_value)
+
+    # Default values for derivation_config if not specified
+    default_derivation_config = {
+        "enabled": True,
+        "root_scope": "auto",
+        "root_measures": [],
+        "include_hidden_objects": True,
+        "include_calculated_columns": True,
+        "max_depth": 50,
+        "table_formats": ["markdown", "csv"],
+    }
+    for key, default_value in default_derivation_config.items():
+        APP_CONFIG["derivation_config"].setdefault(key, default_value)
 
     # Default values for git_config if not specified
     default_git_config = {

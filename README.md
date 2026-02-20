@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project provides a Python-based solution to extract the structure of a Power BI model (`.pbix`) using [pbi-tools](https://github.com/pbi-tools/pbi-tools). It generates comprehensive metadata in various formats (CSV, Excel, JSON diff, Markdown diff, Mermaid ER diagrams), and optionally manages version control through automated Git operations.
+This project provides a Python-based solution to extract the structure of a Power BI model (`.pbix`) using [pbi-tools](https://github.com/pbi-tools/pbi-tools). It generates comprehensive metadata in various formats (CSV, Excel, JSON diff, Markdown diff, Mermaid ER diagrams, and derivation outputs for measures/calculated columns), and optionally manages version control through automated Git operations.
 
 The primary goal is to automate the tracking of model changes, streamline technical documentation, and facilitate collaboration by maintaining a versioned history of the Power BI model's schema.
 
@@ -18,6 +18,7 @@ The primary goal is to automate the tracking of model changes, streamline techni
     *   JSON diff files highlighting changes between model versions.
     *   Markdown reports summarizing these differences.
     *   Mermaid syntax for Entity-Relationship (ER) diagrams.
+    *   Derivation tree outputs: JSON tree, Mermaid flowchart (LR), and user-friendly table (Markdown + CSV).
 *   **Changelog**: Automatically updates a changelog for each model, tracking its evolution.
 *   **Backup**: Saves timestamped copies of the raw `database.json` model and the `.pbix` file (as a ZIP archive).
 *   **Git Integration (Optional)**:
@@ -90,6 +91,7 @@ The primary goal is to automate the tracking of model changes, streamline techni
 │   │   ├── changelog_manager.py
 │   │   ├── cli_utils.py
 │   │   ├── config_manager.py
+│   │   ├── derivation_engine.py
 │   │   ├── diff_engine.py
 │   │   ├── file_exporters.py
 │   │   ├── git_manager.py
@@ -111,8 +113,6 @@ The primary goal is to automate the tracking of model changes, streamline techni
 
 ---
 
-## Configuration Details
-
 ### `config.yaml`
 
 This file controls the behavior of the script. Key sections:
@@ -130,10 +130,20 @@ This file controls the behavior of the script. Key sections:
 |                   | `save_json_diff`       | Save structural differences between the current and previous model in JSON format.                         | `true`                                                                     |
 |                   | `save_markdown_diff`   | Save a human-readable summary of model differences in Markdown format.                                     | `true`                                                                     |
 |                   | `save_mermaid_er`      | Save an Entity-Relationship diagram in Mermaid syntax (can be rendered by Markdown viewers).               | `true`                                                                     |
+|                   | `save_derivation_json` | Save derivation tree payload for measures/calculated columns in JSON format.                               | `true`                                                                     |
+|                   | `save_mermaid_derivation` | Save a Mermaid `flowchart LR` with measure/column dependencies.                                         | `true`                                                                     |
+|                   | `save_derivation_table` | Save a user-friendly derivation table (Markdown and/or CSV).                                             | `true`                                                                     |
 |                   | `save_changelog`       | Create/update a `CHANGELOG.md` file for the processed model, summarizing changes.                          | `true`                                                                     |
 |                   | `save_database_copy`   | Save a timestamped copy of the extracted `database.json` file.                                             | `true`                                                                     |
 |                   | `save_pbix_zip`        | Save a timestamped ZIP archive of the original `.pbix` file.                                               | `false`                                                                    |
 |                   | `granularity_output`        | Format `string` for granularity timestamped output files                                               | `%Y%m%d`
+| `derivation`      | `enabled`              | Enables derivation graph computation and related exports.                                                  | `true`                                                                     |
+|                   | `root_scope`           | Root selection mode: `auto`, `configured`, `all_measures`.                                                | `auto`                                                                     |
+|                   | `root_measures`        | Explicit root list when `root_scope=configured`. Accepts `Table[Measure]` or unique measure names.       | `[]`                                                                       |
+|                   | `include_hidden_objects` | Include hidden measures/columns in derivation graph.                                                     | `true`                                                                     |
+|                   | `include_calculated_columns` | Include calculated columns in derivation graph.                                                       | `true`                                                                     |
+|                   | `max_depth`            | Maximum DFS depth while expanding the derivation tree.                                                     | `50`                                                                       |
+|                   | `table_formats`        | Export formats for derivation table (`markdown`, `csv`).                                                   | `["markdown","csv"]`                                                       |
 | `git`             | `enabled`              | Enable Git versioning features (`true`/`false`).                                                           | `false`                                                                    |
 |                   | `remote_url`           | URL of the remote Git repository (e.g., GitHub, GitLab). Required if `enabled` is `true`.                  | `https://github.com/your_username/your_pbi_models_repo.git`                |
 |                   | `branch`               | Target branch for commits and pushes (e.g., `main`, `master`).                                             | `main`                                                                     |
@@ -150,6 +160,44 @@ This file stores sensitive credentials and should **not** be committed to your r
 | `GIT_TOKEN`    | Personal Access Token (PAT) for Git services like GitHub, GitLab, Azure DevOps. | `ghp_YourGitHubPersonalAccessToken` |
 
 If `GIT_USERNAME` and `GIT_TOKEN` are provided and `git.remote_url` is an HTTPS URL, the script will attempt to use these for authentication when pushing to the remote repository.
+
+---
+
+## Derivation Tree Outputs
+
+When `derivation.enabled: true` and related output flags are enabled, each model folder includes:
+
+* `json/<model_name>_derivation_tree.json`
+* `<model_name>_derivation_graph.md` (Mermaid `flowchart LR`)
+* `csv/<model_name>_derivation_table.csv`
+* `<model_name>_derivation_table.md`
+
+### JSON example (simplified)
+
+```json
+{
+  "model_name": "FinanceReporting_AUM",
+  "root_scope": "auto",
+  "roots": ["Misure[Delta Year N vs Budget N net]"],
+  "nodes": [],
+  "edges": [],
+  "measure_derivations": {},
+  "unresolved_references": []
+}
+```
+
+### Mermaid example (simplified)
+
+```mermaid
+flowchart LR
+    N_Misure_Delta_Year_N_vs_Budget_N_net["Misure.Delta Year N vs Budget N net"]
+    N_Misure_Year_N_net["Misure.Year N net"]
+    N_Misure_Budget_N_net["Misure.Budget N net"]
+    N_Misure_Delta_Year_N_vs_Budget_N_net --> N_Misure_Year_N_net
+    N_Misure_Delta_Year_N_vs_Budget_N_net --> N_Misure_Budget_N_net
+```
+
+The derivation Mermaid intentionally shows only `table.object` node labels (without DAX expressions) and keeps shared intermediate nodes unique across different roots.
 
 ---
 

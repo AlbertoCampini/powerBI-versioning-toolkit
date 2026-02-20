@@ -40,10 +40,40 @@ output_elements:
   save_json_diff: true
   save_markdown_diff: true
   save_mermaid_er: true
+  save_derivation_json: true
+  save_mermaid_derivation: true
+  save_derivation_table: true
   save_changelog: true
   save_database_copy: true # Saves a timestamped copy of the new database.json
   save_pbix_zip: false     # Saves a timestamped ZIP of the original .pbix file
   granularity_output: "%Y%m%d" # Format string for granularity timestamped output files
+
+derivation:
+  # Enable derivation tree processing for measures and calculated columns.
+  enabled: true
+
+  # Root selection mode for derivation trees.
+  # Options: 'auto', 'configured', 'all_measures'
+  root_scope: "auto"
+
+  # Used only when root_scope='configured'. You can pass canonical IDs (Table[Measure])
+  # or plain measure names when globally unique.
+  root_measures: []
+
+  # Include hidden objects (isHidden=true) in derivation graph.
+  include_hidden_objects: true
+
+  # Include calculated columns in the derivation graph.
+  include_calculated_columns: true
+
+  # Maximum DFS depth for derivation expansion.
+  max_depth: 50
+
+  # Output format(s) for the user-friendly derivation table.
+  # Options include: 'markdown', 'csv'
+  table_formats:
+    - "markdown"
+    - "csv"
 
 git:
   # Enable Git integration. If true, the script will attempt to initialize a repo,
