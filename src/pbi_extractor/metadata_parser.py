@@ -12,6 +12,15 @@ from .logger_setup import get_logger
 
 logger = get_logger(__name__)
 
+
+def normalize_expression(expression: Any) -> str:
+    """Normalizes DAX expressions to a single string."""
+    if expression is None:
+        return ""
+    if isinstance(expression, list):
+        return "\n".join(str(line) for line in expression if line is not None)
+    return str(expression)
+
 def load_model_from_json(file_path: Path) -> Dict[str, Any] | None:
     """Loads the model from a database.json file.
 
@@ -61,30 +70,40 @@ def collect_metadata_from_model(
         return pd.DataFrame(tables_list), pd.DataFrame(fields_list), pd.DataFrame(relationships_list)
 
     for tbl in model_data.get("tables", []):
+        table_name = tbl.get("name", "UnknownTable")
         tables_list.append({
-            "table_name": tbl.get("name", "UnknownTable"),
+            "table_name": table_name,
             "is_hidden": tbl.get("isHidden", False),
             "description": tbl.get("description", ""),
         })
         for col in tbl.get("columns", []):
+            object_name = col.get("name", "UnknownColumn")
+            col_type = str(col.get("type", "")).strip().lower()
+            normalized_expression = normalize_expression(col.get("expression"))
+            is_calculated_column = col_type in {"calculated", "calculatedtablecolumn"} or bool(normalized_expression)
             fields_list.append({
-                "table": tbl.get("name", "UnknownTable"),
-                "object_name": col.get("name", "UnknownColumn"),
-                "object_type": "calculated column" if col.get("type") else "column" , # If type field exists the object is calculated column otherwise it is column
+                "table": table_name,
+                "object_name": object_name,
+                "object_type": "calculated column" if is_calculated_column else "column",
                 "data_type": col.get("dataType"),
                 "is_hidden": col.get("isHidden", False),
                 "description": col.get("description", ""),
-                "expression": col.get("expression",""), # Expression is relevant field only for DAX for calculated columns
+                "expression": normalized_expression,
+                "is_calculated": is_calculated_column,
+                "object_id": f"{table_name}[{object_name}]",
             })
         for meas in tbl.get("measures", []):
+            object_name = meas.get("name", "UnknownMeasure")
             fields_list.append({
-                "table": tbl.get("name", "UnknownTable"),
-                "object_name": meas.get("name", "UnknownMeasure"),
+                "table": table_name,
+                "object_name": object_name,
                 "object_type": "measure",
                 "data_type": None,  # Measures don't have a fixed data type in the same way columns do
                 "is_hidden": meas.get("isHidden", False),
                 "description": meas.get("description", ""),
-                "expression": meas.get("expression", ""),
+                "expression": normalize_expression(meas.get("expression")),
+                "is_calculated": False,
+                "object_id": f"{table_name}[{object_name}]",
             })
 
     for rel in model_data.get("relationships", []):

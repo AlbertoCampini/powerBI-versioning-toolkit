@@ -23,12 +23,21 @@ from pbi_extractor.logger_setup import setup_logging, get_logger
 from pbi_extractor.pbi_interaction import get_first_pbi_session, extract_model_from_session
 from pbi_extractor.metadata_parser import load_model_from_json, collect_metadata_from_model
 from pbi_extractor.diff_engine import diff_models
+from pbi_extractor.derivation_engine import (
+    build_derivation_graph,
+    select_derivation_roots,
+    build_measure_derivation_forest,
+    build_derivation_output_payload,
+)
 from pbi_extractor.file_exporters import (
     export_metadata_to_csv,
     export_metadata_to_excel,
     save_diff_to_json,
     save_diff_to_markdown,
     save_mermaid_er_diagram,
+    save_derivation_to_json,
+    save_mermaid_derivation_diagram,
+    save_derivation_tables,
     save_database_json_copy,
     create_pbix_zip_archive
 )
@@ -186,10 +195,49 @@ def main_workflow():
     print("🔧 Phase 6 Collecting metadata from new model...", end=" ")
     logger.info("Collecting metadata from the new model...")
     tables_df, fields_df, rels_df = collect_metadata_from_model(new_model_data)
+    derivation_data = None
     if tables_df.empty and fields_df.empty and rels_df.empty:
         logger.warning("No metadata (tables, fields, relationships) collected from the new model. Output files might be empty or not generated.")
     else:
         logger.info(f"Metadata collected: {len(tables_df)} tables, {len(fields_df)} fields, {len(rels_df)} relationships.")
+
+    derivation_config = config.get("derivation_config", {})
+    if derivation_config.get("enabled", True):
+        logger.info("Building derivation graph for measures and calculated columns...")
+        derivation_graph = build_derivation_graph(
+            model_data=new_model_data,
+            fields_df=fields_df,
+            include_hidden=bool(derivation_config.get("include_hidden_objects", True)),
+            include_calculated_columns=bool(derivation_config.get("include_calculated_columns", True)),
+        )
+        root_scope = str(derivation_config.get("root_scope", "auto"))
+        configured_roots = derivation_config.get("root_measures", [])
+        selected_roots = select_derivation_roots(
+            graph=derivation_graph,
+            root_scope=root_scope,
+            configured_roots=configured_roots if isinstance(configured_roots, list) else [],
+        )
+        derivation_forest = build_measure_derivation_forest(
+            graph=derivation_graph,
+            roots=selected_roots,
+            max_depth=int(derivation_config.get("max_depth", 50)),
+        )
+        derivation_data = build_derivation_output_payload(
+            model_name=model_name_from_pbix,
+            root_scope=root_scope,
+            roots=selected_roots,
+            graph=derivation_graph,
+            forest=derivation_forest,
+        )
+        logger.info(
+            "Derivation graph built: %s nodes, %s edges, %s roots, %s unresolved references.",
+            len(derivation_data.get("nodes", [])),
+            len(derivation_data.get("edges", [])),
+            len(derivation_data.get("roots", [])),
+            len(derivation_data.get("unresolved_references", [])),
+        )
+    else:
+        logger.info("Derivation outputs are disabled by configuration.")
     print("✅ Phase 6 Complete")
     
     # 7. Perform Diff (if old model data is available)
@@ -228,6 +276,16 @@ def main_workflow():
         save_diff_to_markdown(model_diff_data, current_model_output_dir, model_name_from_pbix)
     # Mermaid ER Diagram
     save_mermaid_er_diagram(tables_df, rels_df, current_model_output_dir, model_name_from_pbix)
+    # Derivation outputs
+    if derivation_data:
+        save_derivation_to_json(derivation_data, current_model_output_json_dir, model_name_from_pbix)
+        save_mermaid_derivation_diagram(derivation_data, current_model_output_dir, model_name_from_pbix)
+        save_derivation_tables(
+            derivation_data,
+            current_model_output_csv_dir,
+            current_model_output_dir,
+            model_name_from_pbix,
+        )
     
     # Changelog (specific to this model)
     # The changelog path should be per model, e.g., current_model_output_dir/changelog.md
